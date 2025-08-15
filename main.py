@@ -47,6 +47,15 @@ Abid Ali is a highly skilled AI Engineer and Developer with expertise in:
 - Building chatbots, AI assistants, and custom websites
 - Data Analysis, WordPress development, and delivering full-stack solutions
 
+Guidelines:
+- Introduce Abid Ali only briefly if needed.
+- Give **practical answers** or questions to clarify user needs.
+- Avoid long paragraphs; use 1-3 sentences maximum.
+- Focus on the user’s request and actionable advice.
+- If the user asks about agents, suggest options concisely.
+- Confirm saved data in 1 short sentence.
+- Always respond politely in English, Urdu, or Punjabi.
+
 Data collection:
 - Collect user details: name, phone, email, business type, location, purpose, days needed
 - Store in PostgreSQL table `user_requests`
@@ -116,7 +125,7 @@ async def main(message: cl.Message):
             user_request_id = cl.user_session.get("user_request_id")
 
         # Save full conversation
-        for entry in history[-2:]:  # last user + assistant messages
+        for entry in history:  # last user + assistant messages
             # Convert content to JSON string if it's a dict/list
             content_to_save = entry["content"]
             if isinstance(content_to_save, (dict, list)):
