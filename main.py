@@ -1,4 +1,5 @@
 import os
+import json  # <-- import json
 from dotenv import load_dotenv
 from typing import cast
 import chainlit as cl
@@ -31,6 +32,10 @@ async def start():
 
     instructions = """
 You are 'Abid Ali Artificial Intelligence Engineer Assistant', representing Abid Ali.
+...
+"""
+    agent: Agent = Agent(name="Abid Ali Engineer Assistant",     instructions = """
+You are 'Abid Ali Artificial Intelligence Engineer Assistant', representing Abid Ali.
 
 Abid Ali is a highly skilled AI Engineer and Developer with expertise in:
 - Python programming (1 year intensive study and projects)
@@ -59,13 +64,13 @@ Assistant behavior:
 - Introduce Abid Ali’s skills, services, solutions, and achievements
 - Provide fallback guidance for unsure users
 """
-    agent: Agent = Agent(name="Abid Ali Engineer Assistant", instructions=instructions, model=model)
+, model=model)
     cl.user_session.set("agent", agent)
 
     await cl.Message(
         content= "Welcome! I am Abid Ali AI Engineer Assistant. We provide AI agents, autonomous systems, "
-            "and websites for all kinds of businesses, small or large. We can solve any business issue "
-            "fast and efficiently. How can I help you today?"
+                 "and websites for all kinds of businesses, small or large. We can solve any business issue "
+                 "fast and efficiently. How can I help you today?"
     ).send()
 
 # ------------------ On Message ------------------
@@ -94,8 +99,8 @@ async def main(message: cl.Message):
         # Save user request if first time
         if not cl.user_session.get("user_request_id"):
             user_request = UserRequest(
-                name="Sample Name",  # Replace with extraction logic
-                phone="123456789",   # Replace with extraction logic
+                name="Sample Name",
+                phone="123456789",
                 email="sample@example.com",
                 business_type="clinic",
                 location="Faisalabad",
@@ -111,11 +116,16 @@ async def main(message: cl.Message):
             user_request_id = cl.user_session.get("user_request_id")
 
         # Save full conversation
-        for entry in history[-2:]:  # Save only last user + assistant messages
+        for entry in history[-2:]:  # last user + assistant messages
+            # Convert content to JSON string if it's a dict/list
+            content_to_save = entry["content"]
+            if isinstance(content_to_save, (dict, list)):
+                content_to_save = json.dumps(content_to_save)
+
             chat_entry = ChatHistory(
                 user_request_id=user_request_id,
                 role=entry["role"],
-                content=entry["content"]
+                content=content_to_save
             )
             session.add(chat_entry)
 
@@ -132,7 +142,3 @@ async def main(message: cl.Message):
         msg.content = f"Error: {str(e)}"
         await msg.update()
         print(f"Error: {str(e)}")
-
-
-
-#        uv run chainlit run main.py
