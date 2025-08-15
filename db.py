@@ -28,6 +28,7 @@ class UserRequest(Base):
     purpose = Column(String, nullable=False)
     days_needed = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
     chat_history = relationship("ChatHistory", back_populates="user_request")
 
 # Chat history table
@@ -42,6 +43,7 @@ class ChatHistory(Base):
 
     user_request = relationship("UserRequest", back_populates="chat_history")
 
+# Create tables
 def init_db():
     Base.metadata.create_all(bind=engine)
 

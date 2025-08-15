@@ -15,7 +15,6 @@ if not GEMINI_API_KEY:
 # ------------------ Chat Start ------------------
 @cl.on_chat_start
 async def start():
-    # Initialize OpenAI / Gemini client
     external_client = AsyncOpenAI(
         api_key=GEMINI_API_KEY,
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -26,31 +25,47 @@ async def start():
         openai_client=external_client
     )
 
-    config = RunConfig(
-        model=model,
-        model_provider=external_client,
-        tracing_disabled=True
-    )
-
+    config = RunConfig(model=model, model_provider=external_client, tracing_disabled=True)
     cl.user_session.set("chat_history", [])
     cl.user_session.set("config", config)
 
     instructions = """
-Your detailed agent instructions here, including collecting user details and solving business issues.
+You are 'Abid Ali Artificial Intelligence Engineer Assistant', representing Abid Ali.
+
+Abid Ali is a highly skilled AI Engineer and Developer with expertise in:
+- Python programming (1 year intensive study and projects)
+- Machine Learning (6 months intensive training and practical projects)
+- Artificial Intelligence (6 months intensive training and practical projects)
+- Deep Learning (6 months hands-on experience)
+- Data Science (8 months hands-on projects and analysis)
+- AI Agents and Autonomous Systems development
+- Building chatbots, AI assistants, and custom websites
+- Data Analysis, WordPress development, and delivering full-stack solutions
+
+Data collection:
+- Collect user details: name, phone, email, business type, location, purpose, days needed
+- Store in PostgreSQL table `user_requests`
+- Save full chat history in `chat_history` table linked to `user_request_id`
+- Confirm to the user that their request has been saved
+- Speak politely and naturally in English, Urdu, or Punjabi
+
+Services:
+- AI Agents, autonomous systems, custom websites
+- Appointment booking bots, automation, marketing tools
+- Solve business issues quickly via AI solutions
+
+Assistant behavior:
+- Persuasive, human-like, engaging, and concise
+- Introduce Abid Ali’s skills, services, solutions, and achievements
+- Provide fallback guidance for unsure users
 """
-    agent: Agent = Agent(
-        name="Abid Ali Engineer Assistant",
-        instructions=instructions,
-        model=model
-    )
+    agent: Agent = Agent(name="Abid Ali Engineer Assistant", instructions=instructions, model=model)
     cl.user_session.set("agent", agent)
 
     await cl.Message(
-        content=(
-            "Welcome! I am Abid Ali AI Engineer Assistant. "
-            "We provide AI agents, autonomous systems, and websites for all businesses. "
-            "We can solve any business issue fast and efficiently. How can I help you today?"
-        )
+        content= "Welcome! I am Abid Ali AI Engineer Assistant. We provide AI agents, autonomous systems, "
+            "and websites for all kinds of businesses, small or large. We can solve any business issue "
+            "fast and efficiently. How can I help you today?"
     ).send()
 
 # ------------------ On Message ------------------
@@ -63,26 +78,21 @@ async def main(message: cl.Message):
     config: RunConfig = cast(RunConfig, cl.user_session.get("config"))
     history = cl.user_session.get("chat_history") or []
 
-    # Append user message to history
+    # Append user message
     history.append({"role": "user", "content": message.content})
 
-    try:
-        result = Runner.run_sync(
-            starting_agent=agent,
-            input=history,
-            run_config=config
-        )
+    session = SessionLocal()
+    user_request_id = None
 
+    try:
+        # Run agent
+        result = Runner.run_sync(starting_agent=agent, input=history, run_config=config)
         response_content = result.final_output
         msg.content = response_content
         await msg.update()
 
-        # Save user request if detected
-        save_user = "name" in message.content.lower() or "phone" in message.content.lower()
-        session = SessionLocal()
-        user_request_id = None
-
-        if save_user:
+        # Save user request if first time
+        if not cl.user_session.get("user_request_id"):
             user_request = UserRequest(
                 name="Sample Name",  # Replace with extraction logic
                 phone="123456789",   # Replace with extraction logic
@@ -95,16 +105,20 @@ async def main(message: cl.Message):
             session.add(user_request)
             session.commit()
             user_request_id = user_request.id
+            cl.user_session.set("user_request_id", user_request_id)
             await cl.Message(content="✅ Your request has been saved successfully!").send()
+        else:
+            user_request_id = cl.user_session.get("user_request_id")
 
-        # Save full chat history
-        for entry in history:
+        # Save full conversation
+        for entry in history[-2:]:  # Save only last user + assistant messages
             chat_entry = ChatHistory(
                 user_request_id=user_request_id,
                 role=entry["role"],
                 content=entry["content"]
             )
             session.add(chat_entry)
+
         session.commit()
         session.close()
 
@@ -120,4 +134,5 @@ async def main(message: cl.Message):
         print(f"Error: {str(e)}")
 
 
-#     uv run chainlit run main.py -w
+
+#        uv run chainlit run main.py
