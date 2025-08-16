@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-# from myapp import run_agent   # 🔹 keep it commented for now
-# from starlette.concurrency import run_in_threadpool
+from myapp import run_agent   # ✅ this is the code you showed
+from starlette.concurrency import run_in_threadpool
 
 app = FastAPI()
 
@@ -25,5 +25,10 @@ class UserMessage(BaseModel):
 
 @app.post("/chat")
 async def chat(user_message: UserMessage):
-    # 🔹 Dummy response to test if connection works
-    return {"response": f"✅ Backend is working! You said: {user_message.message}"}
+    try:
+        # ✅ Run agent in thread pool so async is safe
+        response = await run_in_threadpool(run_agent, user_message.message)
+        return {"response": response}
+    except Exception as e:
+        # ✅ Add safe error handling (useful for Railway deploys)
+        return {"response": f"⚠️ Server Error: {str(e)}"}
