@@ -83,31 +83,35 @@
         const chatForm = document.getElementById('chatForm');
         const userInput = document.getElementById('userInput');
         const chatBox = document.getElementById('chatBox');
-        
+
+        // Auto switch between local and Railway
+        const API_BASE = window.location.hostname === "localhost"
+            ? "http://127.0.0.1:8000"
+            : "https://abidpa-production.up.railway.app";
+
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const message = userInput.value.trim();
             if (!message) return;
-        
+
             appendMessage('user', message);
             userInput.value = '';
-        
+
             try {
-                // Use absolute URL
-                const response = await fetch('http://127.0.0.1:8000/chat', {
+                const response = await fetch(`${API_BASE}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message })
                 });
-        
+
                 const data = await response.json();
                 appendMessage('assistant', data.response);
-        
+
             } catch (err) {
                 appendMessage('assistant', '⚠ Error: Cannot reach server.');
             }
         });
-        
+
         function appendMessage(sender, text) {
             const div = document.createElement('div');
             div.className = `message ${sender}`;
@@ -115,7 +119,6 @@
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
-        </script>
-        
+    </script>
 </body>
 </html>
