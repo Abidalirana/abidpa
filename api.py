@@ -1,34 +1,29 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict
-from agents import Agent, Runner, AsyncOpenAI, OpenAIChatCompletionsModel
-import os
-
-# Initialize your Gemini/OpenAI agent once
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-external_client = AsyncOpenAI(
-    api_key=GEMINI_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-)
-
-model = OpenAIChatCompletionsModel(
-    model="gemini-2.0-flash",
-    openai_client=external_client
-)
-
-config = RunConfig(model=model, model_provider=external_client, tracing_disabled=True)
-
-instructions = "Your full agent instructions here..."  # copy your detailed instructions
-agent = Agent(name="Abid Ali Engineer Assistant", instructions=instructions, model=model)
+from myapp import run_agent
+from starlette.concurrency import run_in_threadpool
 
 app = FastAPI()
 
-class MessageRequest(BaseModel):
-    messages: List[Dict]  # [{"role": "user", "content": "Hello"}]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def home():
+    return FileResponse("index.html")
+
+class UserMessage(BaseModel):
+    message: str
 
 @app.post("/chat")
-async def chat_endpoint(request: MessageRequest):
-    history = request.messages
-    result = Runner.run_sync(starting_agent=agent, input=history, run_config=config)
-    return {"response": result.final_output}
+async def chat(user_message: UserMessage):
+    # Run sync function in a thread pool to avoid blocking async loop
+    response = await run_in_threadpool(run_agent, user_message.message)
+    return {"response": response}

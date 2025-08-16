@@ -2,7 +2,6 @@ import os
 import uuid
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, inspect
-from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 
@@ -46,30 +45,20 @@ class ChatHistory(Base):
 
     user_request = relationship("UserRequest", back_populates="chat_history")
 
-class Thread(Base):
-    __tablename__ = "thread"  # lowercase table name now
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=True)
-    user_id = Column(Integer, nullable=True)
-    thread_metadata = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
-
 # ------------------ Initialize DB ------------------
 def init_db():
     """Creates all tables if they do not exist."""
     inspector = inspect(engine)
     existing_tables = inspector.get_table_names()
 
-    models = [UserRequest, ChatHistory, Thread]
+    models = [UserRequest, ChatHistory]  # Thread removed
     for model in models:
-        table_name = model.__tablename__.lower()
-        if table_name in [t.lower() for t in existing_tables]:
-            print(f"ℹ Table '{model.__tablename__}' already exists.")
+        table_name = model.__tablename__
+        if table_name in existing_tables:
+            print(f"ℹ Table '{table_name}' already exists.")
         else:
             model.__table__.create(bind=engine)
-            print(f"✅ Table '{model.__tablename__}' created successfully!")
+            print(f"✅ Table '{table_name}' created successfully!")
 
 # ------------------ Run only if script is executed directly ------------------
 if __name__ == "__main__":
